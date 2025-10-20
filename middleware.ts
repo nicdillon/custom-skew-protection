@@ -49,6 +49,20 @@ export function middleware(request: NextRequest) {
     response.headers.set('X-Deployment-ID', deploymentId);
   }
 
+  // Cache pages for the same duration as the cookie (5 minutes)
+  // This ensures users don't get new HTML while their cookie is still valid
+  const maxAge = 300; // 5 minutes (matches cookie maxAge)
+
+  // Set cache headers that respect the deployment cookie
+  // Using 'private' because cache is specific to each user's deployment
+  response.headers.set(
+    'Cache-Control',
+    `private, max-age=${maxAge}, must-revalidate`
+  );
+
+  // Add Vary header to ensure cache varies by Cookie
+  response.headers.set('Vary', 'Cookie');
+
   return response;
 }
 

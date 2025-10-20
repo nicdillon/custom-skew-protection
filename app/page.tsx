@@ -1,5 +1,6 @@
 import { cookies, headers } from 'next/headers';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default async function Home() {
   // Access cookies and headers server-side
@@ -10,10 +11,37 @@ export default async function Home() {
   const deploymentId = process.env.VERCEL_DEPLOYMENT_ID || 'development';
   const vercelEnv = process.env.VERCEL_ENV || 'development';
 
+  const imageUrl = '/photoA.webp';
+  const deploymentVersion = 'DEPLOYMENT A';
+
+  // Server-side logging
+  console.log(`[${deploymentVersion}] Serving page with image: ${imageUrl}`);
+  console.log(`[${deploymentVersion}] Deployment ID: ${deploymentId}`);
+  console.log(`[${deploymentVersion}] Cookie: ${deploymentCookie?.value || 'none'}`);
+
   return (
     <main>
       <div style={styles.container}>
-        <h1 style={styles.title}>Custom Skew Protection Demo Change 3</h1>
+        <h1 style={styles.title}>🔴 DEPLOYMENT A - Photo A</h1>
+
+        <div style={styles.card}>
+          <h2 style={styles.cardTitle}>📸 Current Image</h2>
+          <div style={styles.imageContainer}>
+            <img
+              src={imageUrl}
+              alt="Photo A - Red"
+              style={styles.image}
+              onLoad={() => console.log(`✅ Client: Successfully loaded ${imageUrl}`)}
+              onError={() => console.error(`❌ Client: Failed to load ${imageUrl}`)}
+            />
+            <p style={styles.imageCaption}>
+              <strong>Image File:</strong> <code>{imageUrl}</code>
+            </p>
+            <p style={styles.imageCaption}>
+              <strong>Deployment:</strong> {deploymentVersion}
+            </p>
+          </div>
+        </div>
 
         <div style={styles.card}>
           <h2 style={styles.cardTitle}>🛡️ Skew Protection Status</h2>
@@ -146,5 +174,23 @@ const styles = {
     borderRadius: '4px',
     overflow: 'auto',
     fontSize: '0.85rem',
+  },
+  imageContainer: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    gap: '1rem',
+  },
+  image: {
+    width: '100%',
+    maxWidth: '600px',
+    height: 'auto',
+    borderRadius: '8px',
+    border: '3px solid #FF6B6B',
+  },
+  imageCaption: {
+    margin: '0.25rem 0',
+    fontSize: '0.95rem',
+    color: '#555',
   },
 };
