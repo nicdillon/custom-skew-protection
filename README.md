@@ -1,254 +1,176 @@
 # Custom Skew Protection for Next.js on Vercel
 
-A complete Next.js application demonstrating manual skew protection using the `__vdpl` cookie in middleware. This ensures users remain pinned to a specific deployment during rollouts, preventing version skew issues.
+A Next.js application demonstrating manual skew protection using the `__vdpl` cookie in middleware to pin users to specific deployments during rollouts.
 
 ## What is Skew Protection?
 
-Skew protection prevents users from hitting different versions of your application during a deployment. Without it, a user might:
-- Load HTML from deployment A
-- Load JavaScript assets from deployment B
-- Make API calls to deployment C
+During a deployment rollout, users can hit different versions of your app:
+- HTML from deployment A
+- JavaScript from deployment B
+- API calls to deployment C
 
-This can cause:
-- Runtime errors from API/frontend mismatches
-- Broken functionality
-- Poor user experience
+This causes errors and broken functionality. **Skew protection** ensures users stay on one deployment version by setting a `__vdpl` cookie that Vercel uses to route all requests consistently.
 
 ## How This Works
 
-1. **Middleware intercepts requests** - All incoming requests pass through Next.js middleware
-2. **Cookie is set** - The `__vdpl` cookie is set to the current `VERCEL_DEPLOYMENT_ID`
-3. **Session is pinned** - All subsequent requests (HTML, assets, API calls) include this cookie
-4. **Vercel routes consistently** - Vercel's infrastructure routes all requests with the same `__vdpl` to the same deployment
-5. **Users stay on one version** - Each user stays on the deployment they first landed on until the cookie expires
+1. **Middleware intercepts requests** - `middleware.ts` runs on every request
+2. **Cookie is set** - Sets `__vdpl` cookie to current `VERCEL_DEPLOYMENT_ID`
+3. **User is pinned** - All subsequent requests (HTML, JS, API) include this cookie
+4. **Vercel routes consistently** - Routes all requests with same cookie to same deployment
+
+```typescript
+// middleware.ts
+export function middleware(request: NextRequest) {
+  const response = NextResponse.next();
+  const deploymentId = process.env.VERCEL_DEPLOYMENT_ID;
+
+  if (!request.cookies.has('__vdpl') && deploymentId) {
+    response.cookies.set({
+      name: '__vdpl',
+      value: deploymentId,
+      path: '/',
+      maxAge: 3600,
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+    });
+  }
+
+  return response;
+}
+```
 
 ## Project Structure
 
 ```
 custom-skew-protection/
-├── .github/
-│   └── workflows/
-│       └── deploy.yml          # GitHub Actions workflow for Vercel deployment
+├── middleware.ts              # Sets __vdpl cookie
 ├── app/
-│   ├── api/
-│   │   └── deployment-info/
-│   │       └── route.ts        # API route showing deployment info
-│   ├── test/
-│   │   └── page.tsx            # Test page to verify skew protection
-│   ├── globals.css             # Global styles
-│   ├── layout.tsx              # Root layout
-│   └── page.tsx                # Home page with deployment info
-├── middleware.ts               # Skew protection middleware (sets __vdpl cookie)
-├── next.config.js              # Next.js configuration
-├── package.json                # Dependencies and scripts
-└── tsconfig.json               # TypeScript configuration
+│   ├── page.tsx              # Home page (shows deployment info)
+│   ├── test/page.tsx         # Test page (verifies consistency)
+│   └── api/deployment-info/  # API endpoint (returns deployment data)
+├── .github/workflows/
+│   ├── deploy.yml            # Production deployment (main branch)
+│   └── preview.yml           # Preview deployment (other branches)
+└── package.json
 ```
 
-## Setup Instructions
+## Setup
 
-### Prerequisites
-
-- Node.js 18+ installed
-- A Vercel account
-- A GitHub repository
-- Vercel CLI installed: `npm install -g vercel`
-
-### 1. Clone and Install
+### 1. Install and Run Locally
 
 ```bash
-git clone <your-repo-url>
-cd custom-skew-protection
 npm install
-```
-
-### 2. Local Development
-
-```bash
 npm run dev
 ```
 
-Visit `http://localhost:3000` to see the app. In development, the deployment ID will show as "development" since `VERCEL_DEPLOYMENT_ID` is only set in Vercel environments.
+Visit `http://localhost:3000` (deployment ID will show as "development" locally).
 
-### 3. Vercel Project Setup
-
-#### Option A: Using Vercel CLI
+### 2. Deploy to Vercel
 
 ```bash
-# Login to Vercel
-vercel login
-
-# Link to a new or existing project
-vercel link
-
-# This creates a .vercel directory with project settings
+npm install -g vercel
+vercel
 ```
 
-#### Option B: Using Vercel Dashboard
+### 3. GitHub Actions (Optional)
 
-1. Go to [vercel.com](https://vercel.com)
-2. Click "Add New Project"
-3. Import your GitHub repository
-4. Configure project settings (Next.js will be auto-detected)
-5. Deploy
+For automated deployments:
 
-### 4. GitHub Actions Setup
+1. **Link project locally:**
+   ```bash
+   vercel link
+   ```
 
-To enable automated deployments via GitHub Actions:
+2. **Get credentials:**
+   - Token: [vercel.com/account/tokens](https://vercel.com/account/tokens)
+   - IDs: `cat .vercel/project.json` (orgId and projectId)
 
-1. **Get your Vercel Token**
-   - Go to [Vercel Account Settings > Tokens](https://vercel.com/account/tokens)
-   - Create a new token
-   - Copy the token value
+3. **Add GitHub Secrets** (Settings → Secrets → Actions):
+   - `VERCEL_TOKEN`
+   - `VERCEL_ORG_ID`
+   - `VERCEL_PROJECT_ID`
 
-2. **Add GitHub Secret**
-   - Go to your GitHub repository
-   - Settings > Secrets and variables > Actions
-   - Click "New repository secret"
-   - Name: `VERCEL_TOKEN`
-   - Value: Paste your Vercel token
-   - Click "Add secret"
+4. **Push to deploy:**
+   ```bash
+   git push origin main        # Production
+   git push origin feature/*   # Preview
+   ```
 
-3. **Configure Vercel Project IDs**
+## Testing
 
-   After running `vercel link`, you'll have a `.vercel/project.json` file. The workflow uses `vercel pull` to fetch this automatically, but ensure you've linked your project first.
+1. **Check deployment info** - Home page displays current deployment ID and cookie value
+2. **Verify cookie** - DevTools → Application → Cookies → Look for `__vdpl`
+3. **Test navigation** - Visit `/test` page, should show same deployment ID
+4. **Test API** - Visit `/api/deployment-info`, returns same deployment ID
+5. **Test rollout** - Deploy new version, existing sessions stay on old deployment
 
-4. **Push to trigger deployment**
+## How Skew Protection Works in Practice
 
-```bash
-git add .
-git commit -m "Initial commit with skew protection"
-git push origin main
+```
+User A visits (10:00 AM)
+└─ Gets cookie: __vdpl=deployment-v1
+   └─ Stays on v1 for 1 hour
+
+New deployment v2 released (10:30 AM)
+
+User A still has __vdpl=deployment-v1
+└─ Continues using v1 (no disruption)
+
+User B visits (10:35 AM)
+└─ Gets cookie: __vdpl=deployment-v2
+   └─ Uses new v2 deployment
 ```
 
-The GitHub Action will:
-- Install dependencies
-- Run `vercel build --prod` to build the project
-- Run `vercel deploy --prebuilt --prod` to deploy the build output
-- Deploy to production on pushes to `main`
-- Deploy preview deployments on pull requests
+## Key Files
 
-## Testing Skew Protection
+- **`middleware.ts`** - Core skew protection logic (26.5 kB)
+- **`.github/workflows/deploy.yml`** - Production deployment workflow
+- **`.github/workflows/preview.yml`** - Preview deployment workflow
+- **`.github/SETUP.md`** - Detailed GitHub Actions setup guide
 
-### 1. View Deployment Info
+## Configuration
 
-Visit the home page to see:
-- Current deployment ID
-- The `__vdpl` cookie value
-- Environment information
+Cookie settings in `middleware.ts`:
 
-### 2. Test API Route
-
-Click "Check API Deployment" or visit `/api/deployment-info` to verify the API is served from the same deployment.
-
-### 3. Test Navigation
-
-Navigate to the Test Page (`/test`) to verify:
-- The same deployment ID appears on all pages
-- The cookie persists across page navigation
-- Match status shows "✓ Matched"
-
-### 4. Test During Deployment
-
-1. Make a change to the code
-2. Deploy to Vercel
-3. While the deployment is rolling out, open the app in multiple tabs
-4. Verify that existing sessions stay on the old deployment
-5. New sessions (new incognito windows) will get the new deployment
-
-## Key Files Explained
-
-### `middleware.ts`
-
-The heart of skew protection. This file:
-- Intercepts all requests before they reach your pages/API
-- Checks for the `__vdpl` cookie
-- Sets the cookie to `VERCEL_DEPLOYMENT_ID` if not present
-- Ensures the cookie is HttpOnly, Secure (in production), and SameSite
-- Has a 1-hour expiration (configurable)
-
-### `.github/workflows/deploy.yml`
-
-Automated deployment workflow that:
-- Runs on pushes to `main` (production) and pull requests (preview)
-- Uses `vercel build --prod` to create `.vercel/output`
-- Uses `vercel deploy --prebuilt` to deploy the pre-built output
-- Avoids rebuilding on Vercel's servers (faster, more consistent)
-
-### `app/page.tsx`
-
-Demonstrates server-side cookie access and displays:
-- Deployment information
-- Cookie status
-- How skew protection works
+```typescript
+{
+  maxAge: 3600,        // 1 hour (adjust as needed)
+  httpOnly: true,      // Not accessible via JavaScript
+  secure: true,        // HTTPS only in production
+  sameSite: 'lax',     // CSRF protection
+}
+```
 
 ## Environment Variables
 
-These are automatically set by Vercel:
+Auto-set by Vercel, no manual configuration needed:
 
-- `VERCEL_DEPLOYMENT_ID` - Unique ID for each deployment
-- `VERCEL_ENV` - Environment type (production/preview/development)
-- `VERCEL_REGION` - Region where the function is running
-
-No additional environment variables are required for skew protection to work.
-
-## Deployment Workflow
-
-```mermaid
-graph LR
-    A[Push to GitHub] --> B[GitHub Actions]
-    B --> C[npm install]
-    C --> D[vercel build --prod]
-    D --> E[Creates .vercel/output]
-    E --> F[vercel deploy --prebuilt --prod]
-    F --> G[Deployed to Vercel]
-```
-
-## Benefits of This Approach
-
-1. **No version skew** - Users stay on consistent deployment versions
-2. **Automatic** - Middleware handles everything transparently
-3. **Works everywhere** - Applies to pages, API routes, and static assets
-4. **Configurable** - Cookie duration and settings can be adjusted
-5. **Debuggable** - Deployment ID visible in responses and headers
-
-## Cookie Configuration
-
-The `__vdpl` cookie is configured with:
-
-- **Path**: `/` (applies to all routes)
-- **MaxAge**: 3600 seconds (1 hour)
-- **HttpOnly**: `true` (not accessible via JavaScript)
-- **Secure**: `true` in production (HTTPS only)
-- **SameSite**: `lax` (CSRF protection)
-
-You can adjust these settings in `middleware.ts` based on your needs.
+- `VERCEL_DEPLOYMENT_ID` - Unique deployment identifier
+- `VERCEL_ENV` - Environment (production/preview/development)
+- `VERCEL_REGION` - Deployment region
 
 ## Troubleshooting
 
-### Cookie not appearing in development
+**Cookie not setting?**
+- Check `VERCEL_DEPLOYMENT_ID` exists (only set on Vercel, not locally)
+- Verify middleware is running (check console logs)
 
-The `VERCEL_DEPLOYMENT_ID` is only set in Vercel environments. In local development, you'll see "development" as the deployment ID, and the cookie logic won't activate the same way.
+**Different deployment IDs on different requests?**
+- Cookie expired (default 1 hour)
+- User cleared cookies
+- New deployment rolled out and user got new session
 
-### Different deployment IDs on different requests
+**GitHub Actions failing?**
+- Verify all 3 secrets are set correctly
+- Ensure `vercel link` was run locally
+- Check Actions tab logs for specific errors
 
-This likely means:
-- The cookie expired (default 1 hour)
-- The user cleared cookies
-- The user is in a different browser/incognito window
-- A new deployment rolled out and the user got a new session
-
-### GitHub Actions failing
-
-Ensure:
-- `VERCEL_TOKEN` secret is set in GitHub
-- You've run `vercel link` locally to set up the project
-- Your Vercel project exists and is accessible
-
-## Further Reading
+## Resources
 
 - [Vercel Skew Protection Docs](https://vercel.com/docs/deployments/skew-protection)
 - [Next.js Middleware](https://nextjs.org/docs/app/building-your-application/routing/middleware)
-- [Vercel CLI](https://vercel.com/docs/cli)
+- [GitHub Actions Setup](.github/SETUP.md)
 
 ## License
 
