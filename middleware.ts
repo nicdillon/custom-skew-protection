@@ -29,8 +29,8 @@ export function middleware(request: NextRequest) {
       name: '__vdpl',
       value: deploymentId,
       path: '/',
-      // Cookie will last for 90 seconds
-      maxAge: 90,
+      // Cookie will last for 5 minutes
+      maxAge: 300,
       // Secure in production (HTTPS only)
       secure: process.env.NODE_ENV === 'production',
       // HttpOnly for security
