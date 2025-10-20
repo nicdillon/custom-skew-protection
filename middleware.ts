@@ -13,7 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
  * 3. If it exists, the cookie will be sent with all requests (HTML, assets, API)
  * 4. Vercel routes all requests with the same __vdpl to the same deployment
  */
-export async function middleware(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const response = NextResponse.next();
 
   // Check if the __vdpl cookie is already set
@@ -44,30 +44,12 @@ export async function middleware(request: NextRequest) {
     console.log(`[Skew Protection] Using existing __vdpl: ${deploymentCookie.value}`);
   }
 
-  // Wait for the response to be generated
-  const res = await response;
-
   // Add deployment info to response headers for debugging
   if (deploymentId) {
-    res.headers.set('X-Deployment-ID', deploymentId);
+    response.headers.set('X-Deployment-ID', deploymentId);
   }
 
-  // Cache pages for the same duration as the cookie (5 minutes)
-  // This ensures users don't get new HTML while their cookie is still valid
-  const maxAge = 300; // 5 minutes (matches cookie maxAge)
-
-  // Force override cache headers (Next.js sets no-cache for dynamic pages by default)
-  // Using 'private' because cache is specific to each user's deployment
-  res.headers.delete('Cache-Control');
-  res.headers.set(
-    'Cache-Control',
-    `private, max-age=${maxAge}, must-revalidate`
-  );
-
-  // Add Vary header to ensure cache varies by Cookie
-  res.headers.set('Vary', 'Cookie');
-
-  return res;
+  return response;
 }
 
 // Apply middleware to all routes
