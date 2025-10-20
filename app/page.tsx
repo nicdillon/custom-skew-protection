@@ -13,24 +13,7 @@ export default async function Home() {
   return (
     <main>
       <div style={styles.container}>
-        <h1 style={styles.title}>🔴 DEPLOYMENT A - Photo A</h1>
-
-        <div style={styles.card}>
-          <h2 style={styles.cardTitle}>📸 Current Image</h2>
-          <div style={styles.imageContainer}>
-            <img
-              src={imageUrl}
-              alt="Photo A - Red"
-              style={styles.image}
-            />
-            <p style={styles.imageCaption}>
-              <strong>Image File:</strong> <code>{imageUrl}</code>
-            </p>
-            <p style={styles.imageCaption}>
-              <strong>Deployment:</strong> {deploymentVersion}
-            </p>
-          </div>
-        </div>
+        <h1 style={styles.title}>Custom Skew Protection Demo</h1>
 
         <div style={styles.card}>
           <h2 style={styles.cardTitle}>🛡️ Skew Protection Status</h2>
