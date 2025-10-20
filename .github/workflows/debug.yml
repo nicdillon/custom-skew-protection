@@ -1,0 +1,36 @@
+name: Debug Secrets
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if secrets exist
+        run: |
+          echo "Checking secrets..."
+
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+            echo "❌ VERCEL_TOKEN is empty or not set"
+          else
+            echo "✅ VERCEL_TOKEN exists (length: ${#VERCEL_TOKEN})"
+          fi
+
+          if [ -z "${{ secrets.VERCEL_ORG_ID }}" ]; then
+            echo "❌ VERCEL_ORG_ID is empty or not set"
+          else
+            echo "✅ VERCEL_ORG_ID exists (length: ${#VERCEL_ORG_ID})"
+            echo "   First 10 chars: ${VERCEL_ORG_ID:0:10}..."
+          fi
+
+          if [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ]; then
+            echo "❌ VERCEL_PROJECT_ID is empty or not set"
+          else
+            echo "✅ VERCEL_PROJECT_ID exists (length: ${#VERCEL_PROJECT_ID})"
+            echo "   First 10 chars: ${VERCEL_PROJECT_ID:0:10}..."
+          fi
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
