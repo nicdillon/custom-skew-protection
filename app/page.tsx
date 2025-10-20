@@ -1,6 +1,5 @@
 import { cookies, headers } from 'next/headers';
 import Link from 'next/link';
-import Image from 'next/image';
 
 export default async function Home() {
   // Access cookies and headers server-side
@@ -10,14 +9,6 @@ export default async function Home() {
   const deploymentCookie = cookieStore.get('__vdpl');
   const deploymentId = process.env.VERCEL_DEPLOYMENT_ID || 'development';
   const vercelEnv = process.env.VERCEL_ENV || 'development';
-
-  const imageUrl = '/photoA.webp';
-  const deploymentVersion = 'DEPLOYMENT A';
-
-  // Server-side logging
-  console.log(`[${deploymentVersion}] Serving page with image: ${imageUrl}`);
-  console.log(`[${deploymentVersion}] Deployment ID: ${deploymentId}`);
-  console.log(`[${deploymentVersion}] Cookie: ${deploymentCookie?.value || 'none'}`);
 
   return (
     <main>
@@ -172,23 +163,5 @@ const styles = {
     borderRadius: '4px',
     overflow: 'auto',
     fontSize: '0.85rem',
-  },
-  imageContainer: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'center',
-    gap: '1rem',
-  },
-  image: {
-    width: '100%',
-    maxWidth: '600px',
-    height: 'auto',
-    borderRadius: '8px',
-    border: '3px solid #FF6B6B',
-  },
-  imageCaption: {
-    margin: '0.25rem 0',
-    fontSize: '0.95rem',
-    color: '#555',
   },
 };
