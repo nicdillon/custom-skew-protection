@@ -40,7 +40,7 @@ export default async function Home() {
             <li>Sets <code>__vdpl</code> cookie to current deployment ID</li>
             <li>All subsequent requests (HTML, assets, API) use the same cookie</li>
             <li>Vercel routes all requests to the same deployment</li>
-            <li>Users don't experience version skew during rollouts</li>
+            <li>Users don&apos;t experience version skew during rollouts</li>
           </ol>
         </div>
 
