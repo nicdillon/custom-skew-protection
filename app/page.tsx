@@ -31,8 +31,6 @@ export default async function Home() {
               src={imageUrl}
               alt="Photo A - Red"
               style={styles.image}
-              onLoad={() => console.log(`✅ Client: Successfully loaded ${imageUrl}`)}
-              onError={() => console.error(`❌ Client: Failed to load ${imageUrl}`)}
             />
             <p style={styles.imageCaption}>
               <strong>Image File:</strong> <code>{imageUrl}</code>
