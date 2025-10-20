@@ -13,7 +13,7 @@ export default async function Home() {
   return (
     <main>
       <div style={styles.container}>
-        <h1 style={styles.title}>Custom Skew Protection Demo</h1>
+        <h1 style={styles.title}>Custom Skew Protection Demo Change 1</h1>
 
         <div style={styles.card}>
           <h2 style={styles.cardTitle}>🛡️ Skew Protection Status</h2>
