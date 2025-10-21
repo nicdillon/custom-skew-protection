@@ -4,16 +4,10 @@ import Link from 'next/link';
 export default async function Home() {
   // Access cookies and headers server-side
   const cookieStore = await cookies();
-  const headersList = await headers();
 
   const deploymentCookie = cookieStore.get('__vdpl');
   const deploymentId = process.env.VERCEL_DEPLOYMENT_ID || 'development';
   const vercelEnv = process.env.VERCEL_ENV || 'development';
-
-  // Set cache control headers for browser caching (5 minutes)
-  // This must be done at the top of the component before any rendering
-  headers().set('Cache-Control', 'private, max-age=300, must-revalidate');
-  headers().set('Vary', 'Cookie');
 
   return (
     <main>
@@ -153,3 +147,5 @@ const styles = {
     fontSize: '0.85rem',
   },
 };
+
+export const dynamic = 'force-dynamic';
